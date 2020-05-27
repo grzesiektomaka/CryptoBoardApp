@@ -1,12 +1,13 @@
 import React from 'react'
 import { Text, StyleSheet, View, TouchableOpacity, Button } from 'react-native'
 
+// import Loader from '../components/Loader'
+
  
 const MyInvestments = ({navigation}) =>{ 
     return(
         <View style={styles.header}>
-            <Text style={styles.appName}>CRYPTO-BOARD</Text>
-            <Button title="Open drawer" onPress={() => navigation.openDrawer()} />
+            {/* <Loader  /> */}
         </View>
     ) 
 }

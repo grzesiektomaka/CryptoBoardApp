@@ -1,10 +1,10 @@
 import React from 'react'
-import {StyleSheet, FlatList, View} from 'react-native'
+import {StyleSheet, FlatList, View, TouchableOpacity} from 'react-native'
 import CoinImage from './CoinImage'
 
 // function 
 
-const CoinGrid = ({coinList, coinsNames}) =>{
+const CoinGrid = ({coinList, coinsNames, openDetail}) =>{
 
     return(
         <View style={styles.coinsGrid}>
@@ -16,7 +16,9 @@ const CoinGrid = ({coinList, coinsNames}) =>{
                 windowSize={10}
                 maxToRenderPerBatch={2}
                 renderItem={({ item }) => (
-                    <CoinImage coin={coinList[item]}/>
+                    <TouchableOpacity onPress={() => openDetail(item)}>
+                        <CoinImage coin={coinList[item]}/>
+                    </TouchableOpacity>
                 )}
             />
         </View>

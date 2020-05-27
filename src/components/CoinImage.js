@@ -6,14 +6,12 @@ const CoinImage = ({coin}) =>{
 
     return(
         <View style={styles.imgWrapper}>
-            <TouchableOpacity>
                 <Image
                     style={styles.coinImage}
                     source={{
                     uri: `http://cryptocompare.com/${coin.ImageUrl}`,
                     }}
                 />
-            </TouchableOpacity>
         </View>
     )
     

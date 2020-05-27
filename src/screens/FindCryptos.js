@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, TextInput } from 'react-native'
 import { withNavigation } from 'react-navigation'
 import Header from '../components/Header'
 import CoinGrid from '../components/CoinGrid'
+import CoinDetail from '../components/CoinDetail'
+import Loader from '../components/Loader'
 import _ from 'lodash'
 import fuzzy from 'fuzzy'
 import axios from 'axios'
@@ -13,24 +15,34 @@ class FindCryptos extends Component {
 
     constructor(props) {
         super(props);
-    
+        
         this.state = {
+    
           inputValue: '',
           filteredCoins: null,
           cryptoCompareOk: false,
           coinList: [],
           currentCoinList: null,
           coinsNames: null,
+          detailItem: '',
+          tempPrice: null,
+          pricesDataset: [],
+          investment: []  
         };
 
+        this.timeout =  null;
         this.fetchCoins = this.fetchCoins.bind(this);
         this.updateCurrentList = this.updateCurrentList.bind(this);
+        this.fetchPrice = this.fetchPrice.bind(this);
+        this.fetchHistorical = this.fetchHistorical.bind(this);
+        this.onChangeText = this.onChangeText.bind(this)
     }
 
     async componentDidMount() {
 
         await this.fetchCoins();
         // setInterval(this.fetchCoins, 4000);
+        
 
     }
 
@@ -43,9 +55,36 @@ class FindCryptos extends Component {
             coinsNames: Object.keys(coinList.data.Data), 
             cryptoCompareOk: true,
             });
-          } catch (e) {
+          } catch (e) { 
             console.log(e);
           }
+    }
+
+    async fetchPrice(name){
+        try{
+            let coinPriceData = await axios.get(`https://min-api.cryptocompare.com/data/price?fsym=${name}&tsyms=USD`)
+            let coinPrice = coinPriceData.data.USD.toFixed(6) 
+            this.setState({
+                tempPrice: coinPrice
+            })
+            
+        }catch(e){
+            console.log(e)
+        }
+    }
+
+    async fetchHistorical(name){
+        try{
+            let coinPriceDataset = 
+            await axios.get(`https://min-api.cryptocompare.com/data/v2/histoday?fsym=${name}&tsym=USD&limit=10`)
+            let coinPrices = coinPriceDataset.data.Data.Data
+            this.setState({
+                pricesDataset: coinPrices
+            })
+            
+        }catch(e){
+            console.log(e)
+        }
     }
 
     handlerFilter = _.debounce((inputValue) => {
@@ -73,25 +112,32 @@ class FindCryptos extends Component {
         this.updateCurrentList()
     }
 
-    onChangeText = (text) =>{
+    handleInput = _.debounce((text) => {
         this.setState({
-            inputValue: text,
             currentCoinList: null
         })
+
         if(!text){
             this.setFilteredCoins(null)
             this.updateCurrentList()
             return;
         }
         this.handlerFilter(text)
+    }, 600)
 
+    onChangeText = (text) =>{
+        this.setState({
+            inputValue: text
+        })
+
+        this.handleInput(text)
     }
 
-    updateCurrentList = () =>{
+    updateCurrentList = () =>{ 
         if(this.state.filteredCoins != null){
             this.setState({
                 currentCoinList: this.state.filteredCoins,
-                coinsNames: Object.keys(this.state.filteredCoins) 
+                coinsNames: Object.keys(this.state.filteredCoins)  
             })
         }else{
             this.setState({
@@ -101,23 +147,99 @@ class FindCryptos extends Component {
         }
     }
 
+    openDetail = (itemName) => {
+        this.fetchPrice(itemName)
+        this.fetchHistorical(itemName)
+
+
+        this.setState({
+            detailItem: itemName
+        })
+
+    }
+
+    closeDetail = () =>{
+        this.setState({
+            detailItem: ''
+        })
+    }
+
+    addInvestment = (id , name, amount) =>{
+
+        let newInvestment = {
+            id: id,
+            name: name,
+            amount: amount,
+            price: this.state.tempPrice,
+            value:  (parseFloat(amount) *parseFloat(this.state.tempPrice)).toFixed(2)
+        }
+
+    
+        this.setState({
+          investment: [...this.state.investment, newInvestment]
+        })
+    }
+
+    updateInvestment = (keyToCoin, amount) =>{
+        let newArray = [...this.state.investment]
+        let i = newArray.map(function(e) { return e.id; }).indexOf(keyToCoin)
+        newArray[i] = {
+            ...newArray[i],
+            amount: amount,
+            price: this.state.tempPrice,
+            value: (parseFloat(amount) *parseFloat(this.state.tempPrice)).toFixed(2)
+        }
+
+        this.setState({
+            investment: newArray
+        })
+    }
+
     render(){ 
 
-        const {currentCoinList, coinsNames} = this.state
+        const {
+            currentCoinList, 
+            coinsNames, 
+            detailItem, 
+            investment, 
+            pricesDataset} = this.state
 
+        // console.log(this.state.pricesDataset)
+
+        // console.log(currentCoinList)
+ 
         return ( 
             <View>
-                <Header navigation={this.props.navigation}/>
-                <TextInput
-                    style={styles.findCryptoInput}
-                    onChangeText={text => this.onChangeText(text)}
-                    value={this.state.inputValue}
-                    placeholder={'Find cryptocurrency'} 
-                />
+                {detailItem == '' && 
+                    <>
+                        <Header navigation={this.props.navigation}/>
+                        <TextInput
+                            style={styles.findCryptoInput}
+                            onChangeText={text => this.onChangeText(text)}
+                            value={this.state.inputValue}
+                            placeholder={'Find cryptocurrency'} 
+                        />
+                    </>
+                }
                 {currentCoinList != null ?
-                    <CoinGrid coinList={currentCoinList} coinsNames={coinsNames}/>
-                    :
-                    <Text>Loading...</Text>
+                    detailItem == '' ?  
+                            <CoinGrid 
+                                coinList={currentCoinList} 
+                                coinsNames={coinsNames}
+                                openDetail={this.openDetail}
+                            />
+                    : 
+                        <CoinDetail 
+                            coinDetailItem={currentCoinList[detailItem]}
+                            closeDetail={this.closeDetail}
+                            investment={investment}
+                            addInvestment={this.addInvestment}
+                            updateInvestment={this.updateInvestment}
+                            historicalPrices={pricesDataset}
+                            keyToCoin = {detailItem}
+                        />
+                :
+                    <Loader />
                 }
             </View>
         )
