@@ -1,8 +1,10 @@
 import React, { useState, useEffect} from 'react'
 import {StyleSheet, View, TextInput, Text} from 'react-native' 
+import _ from 'lodash'
 
 import CoinDetailHeader from './CoinDetailHeader'
 import Chart from './Chart'
+import { AppContext } from '../AppProvider'
 
 const CoinDetail = ({
     coinDetailItem, 
@@ -11,7 +13,8 @@ const CoinDetail = ({
     addInvestment, 
     updateInvestment,
     historicalPrices, 
-    keyToCoin}) =>{
+    keyToCoin,
+    currentPrice}) =>{
     
     const [coinAmount, setCoinAmount] = React.useState('');
     const [coinPrice, setPrice] = React.useState(0);
@@ -50,32 +53,39 @@ const CoinDetail = ({
     }
 
     return(
-        <View style={styles.detailWrapper} >
-            <CoinDetailHeader 
-                coinName={coinDetailItem.CoinName} 
-                coinImgSrc={coinDetailItem.ImageUrl}
-                closeDetail={closeDetail}
-            />
-            <Text style={styles.yourCryptoTxt}>YOUR CRYPTOCURRENCY</Text>
-            <View style={styles.cryptoInput}>
-                <TextInput 
-                    onChangeText={text => {
-                        handleInput(text)
-                    }}
-                    value={coinAmount}
-                    keyboardType={'numeric'}
-                    style={styles.coinAmountInputStyle}
-                />
-            </View>
-            <Text style={styles.coinPriceStyle}>
-                $ {coinPrice}
-            </Text>
-            <Text style={styles.daysOption}>1D</Text>
-            
-            {historicalPrices[0] != undefined &&
-                <Chart prices={historicalPrices}/>
-            }
-        </View>
+        <AppContext.Consumer>
+            {context => (
+                <View style={styles.detailWrapper} >
+                    <CoinDetailHeader 
+                        coinName={coinDetailItem.CoinName} 
+                        coinImgSrc={coinDetailItem.ImageUrl}
+                        closeDetail={closeDetail}
+                    />
+                    <Text style={styles.yourCryptoTxt}>YOUR CRYPTOCURRENCY</Text>
+                    <View style={styles.cryptoInput}>
+                        <TextInput 
+                            onChangeText={text => {
+                                handleInput(text)
+                                let price = (parseFloat(text) *parseFloat(currentPrice)).toFixed(2)
+                                context.handleGlobalInvestment(keyToCoin, coinDetailItem.CoinName, text, price)
+                            }}
+                            value={coinAmount}
+                            keyboardType={'numeric'}
+                            style={styles.coinAmountInputStyle}
+                        />
+                    </View>
+                    <Text style={styles.coinPriceStyle}>
+                        $ {coinPrice}
+                    </Text>
+                    <Text style={styles.daysOption}>1D</Text>
+                    
+                    {historicalPrices[0] != undefined &&
+                        <Chart prices={historicalPrices}/>
+                    }
+                </View>
+            )}
+        </AppContext.Consumer>
+        
     )
 }
 

@@ -38,6 +38,8 @@ class FindCryptos extends Component {
         this.onChangeText = this.onChangeText.bind(this)
     }
 
+
+
     async componentDidMount() {
 
         await this.fetchCoins();
@@ -196,7 +198,7 @@ class FindCryptos extends Component {
     }
 
     render(){ 
-
+ 
         const {
             currentCoinList, 
             coinsNames, 
@@ -204,9 +206,6 @@ class FindCryptos extends Component {
             investment, 
             pricesDataset} = this.state
 
-        // console.log(this.state.pricesDataset)
-
-        // console.log(currentCoinList)
  
         return ( 
             <View>
@@ -237,6 +236,7 @@ class FindCryptos extends Component {
                             updateInvestment={this.updateInvestment}
                             historicalPrices={pricesDataset}
                             keyToCoin = {detailItem}
+                            currentPrice = {this.state.tempPrice}
                         />
                 :
                     <Loader />
